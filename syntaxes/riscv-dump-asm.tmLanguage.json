@@ -1,0 +1,291 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "RISC-V Dump Assembly",
+  "scopeName": "source.riscv-dump-asm",
+  "patterns": [
+    {
+      "include": "#fileHeader"
+    },
+    {
+      "include": "#sectionHeader"
+    },
+    {
+      "include": "#dumpLabel"
+    },
+    {
+      "include": "#instructionLine"
+    },
+    {
+      "include": "#asmLabel"
+    },
+    {
+      "include": "#directiveLine"
+    },
+    {
+      "include": "#bareInstructionLine"
+    },
+    {
+      "include": "#comments"
+    }
+  ],
+  "repository": {
+    "fileHeader": {
+      "name": "meta.header.file-format.riscv-dump",
+      "match": "^(.+?)([:：])\\s*(file format|文件格式)\\s+([-\\w.]+)\\s*$",
+      "captures": {
+        "1": {
+          "name": "string.unquoted.filename.riscv-dump"
+        },
+        "2": {
+          "name": "punctuation.separator.key-value.riscv-dump"
+        },
+        "3": {
+          "name": "keyword.other.file-format.riscv-dump"
+        },
+        "4": {
+          "name": "support.constant.object-format.riscv-dump"
+        }
+      }
+    },
+    "sectionHeader": {
+      "name": "meta.section.header.riscv-dump",
+      "match": "^(Disassembly of section)\\s+(\\.[^:]+)(:)",
+      "captures": {
+        "1": {
+          "name": "keyword.other.disassembly.riscv-dump"
+        },
+        "2": {
+          "name": "entity.name.section.riscv-dump"
+        },
+        "3": {
+          "name": "punctuation.separator.section.riscv-dump"
+        }
+      }
+    },
+    "dumpLabel": {
+      "name": "meta.label.dump.riscv-dump",
+      "match": "^\\s*([0-9A-Fa-f]+)\\s+(<)([^>]+)(>)(:)",
+      "captures": {
+        "1": {
+          "name": "constant.numeric.address.hex.riscv-dump"
+        },
+        "2": {
+          "name": "punctuation.definition.label.begin.riscv-dump"
+        },
+        "3": {
+          "name": "entity.name.function.label.riscv-dump"
+        },
+        "4": {
+          "name": "punctuation.definition.label.end.riscv-dump"
+        },
+        "5": {
+          "name": "punctuation.separator.label.riscv-dump"
+        }
+      }
+    },
+    "instructionLine": {
+      "name": "meta.instruction.disassembled.riscv-dump",
+      "begin": "^(\\s*)([0-9A-Fa-f]+)(:)(\\s+)([0-9A-Fa-f]{4,16})(\\s+)([A-Za-z.][\\w.]*)",
+      "beginCaptures": {
+        "2": {
+          "name": "constant.numeric.address.hex.riscv-dump"
+        },
+        "3": {
+          "name": "punctuation.separator.address.riscv-dump"
+        },
+        "5": {
+          "name": "constant.numeric.machine-code.hex.riscv-dump"
+        },
+        "7": {
+          "name": "entity.name.function.instruction.riscv"
+        }
+      },
+      "end": "$",
+      "patterns": [
+        {
+          "include": "#comments"
+        },
+        {
+          "include": "#symbolReference"
+        },
+        {
+          "include": "#registers"
+        },
+        {
+          "include": "#csrs"
+        },
+        {
+          "include": "#numbers"
+        },
+        {
+          "include": "#punctuation"
+        }
+      ]
+    },
+    "bareInstructionLine": {
+      "name": "meta.instruction.source.riscv",
+      "begin": "^\\s*([A-Za-z.][\\w.]*)\\b",
+      "beginCaptures": {
+        "1": {
+          "name": "entity.name.function.instruction.riscv"
+        }
+      },
+      "end": "$",
+      "patterns": [
+        {
+          "include": "#comments"
+        },
+        {
+          "include": "#symbolReference"
+        },
+        {
+          "include": "#registers"
+        },
+        {
+          "include": "#csrs"
+        },
+        {
+          "include": "#numbers"
+        },
+        {
+          "include": "#punctuation"
+        }
+      ]
+    },
+    "asmLabel": {
+      "name": "meta.label.source.riscv",
+      "match": "^\\s*([A-Za-z_.$][\\w.$]*)(:)",
+      "captures": {
+        "1": {
+          "name": "entity.name.function.label.riscv"
+        },
+        "2": {
+          "name": "punctuation.separator.label.riscv"
+        }
+      }
+    },
+    "directiveLine": {
+      "name": "meta.directive.riscv",
+      "begin": "^\\s*(\\.[A-Za-z][\\w.]*)\\b",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.directive.riscv"
+        }
+      },
+      "end": "$",
+      "patterns": [
+        {
+          "include": "#comments"
+        },
+        {
+          "include": "#symbolReference"
+        },
+        {
+          "include": "#numbers"
+        },
+        {
+          "include": "#punctuation"
+        }
+      ]
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.number-sign.riscv",
+          "begin": "#",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.riscv"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "include": "#symbolReference"
+            },
+            {
+              "include": "#numbers"
+            }
+          ]
+        },
+        {
+          "name": "comment.line.semicolon.riscv",
+          "begin": ";",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.riscv"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "include": "#symbolReference"
+            },
+            {
+              "include": "#numbers"
+            }
+          ]
+        }
+      ]
+    },
+    "symbolReference": {
+      "name": "meta.symbol-reference.riscv-dump",
+      "match": "(<)([^>]+)(>)",
+      "captures": {
+        "1": {
+          "name": "punctuation.definition.symbol.begin.riscv-dump"
+        },
+        "2": {
+          "name": "entity.name.function.symbol.riscv-dump"
+        },
+        "3": {
+          "name": "punctuation.definition.symbol.end.riscv-dump"
+        }
+      }
+    },
+    "registers": {
+      "name": "variable.parameter.register.riscv",
+      "match": "\\b(?:zero|ra|sp|gp|tp|fp|pc|x(?:[0-9]|[12][0-9]|3[01])|t[0-6]|s(?:[0-9]|1[01])|a[0-7])\\b"
+    },
+    "csrs": {
+      "name": "variable.other.csr.riscv",
+      "match": "\\b(?:cycle|time|instret|fflags|frm|fcsr|mvendorid|marchid|mimpid|mhartid|mstatus|misa|medeleg|mideleg|mie|mtvec|mcounteren|mscratch|mepc|mcause|mtval|mip|mtinst|mtval2|sstatus|sie|stvec|scounteren|sscratch|sepc|scause|stval|sip|satp|ssp|ustatus|uie|utvec|uscratch|uepc|ucause|utval|uip)\\b"
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.address.hex.riscv-dump",
+          "match": "\\b[0-9A-Fa-f]+(?=\\s*<)"
+        },
+        {
+          "name": "constant.numeric.hex.riscv",
+          "match": "\\b0x[0-9A-Fa-f]+\\b"
+        },
+        {
+          "name": "constant.numeric.decimal.riscv",
+          "match": "(?<![\\w.])-?\\b\\d+\\b"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.separator.operand.riscv",
+          "match": ","
+        },
+        {
+          "name": "punctuation.section.parens.begin.riscv",
+          "match": "\\("
+        },
+        {
+          "name": "punctuation.section.parens.end.riscv",
+          "match": "\\)"
+        },
+        {
+          "name": "keyword.operator.arithmetic.riscv",
+          "match": "[+-]"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,8 @@
+.git/**
+.gitignore
+.vscode/**
+node_modules/**
+.vscode-test/**
+*.vsix
+jop.dump
+rop.SText

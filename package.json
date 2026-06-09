@@ -1,0 +1,54 @@
+{
+  "name": "riscv-dump-asm",
+  "displayName": "RISC-V Dump Assembly",
+  "description": "Syntax highlighting and navigation support for RISC-V objdump-style disassembly files.",
+  "version": "0.0.1",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:riscv-dump-asm"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "riscv-dump-asm",
+        "aliases": [
+          "RISC-V Dump Assembly",
+          "RISC-V Disassembly",
+          "riscv-dump-asm"
+        ],
+        "extensions": [
+          ".dump",
+          ".objdump",
+          ".dis",
+          ".disasm",
+          ".SText",
+          ".stext"
+        ],
+        "filenamePatterns": [
+          "*.dump",
+          "*.objdump",
+          "*.dis",
+          "*.disasm",
+          "*.SText",
+          "*.stext"
+        ],
+        "firstLine": "^.*(?:file format|文件格式).*riscv",
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "riscv-dump-asm",
+        "scopeName": "source.riscv-dump-asm",
+        "path": "./syntaxes/riscv-dump-asm.tmLanguage.json"
+      }
+    ]
+  }
+}
