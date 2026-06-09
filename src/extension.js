@@ -6,6 +6,25 @@ const LANGUAGE_ID = "riscv-dump-asm";
 const SECTION_RE = /^Disassembly of section\s+([^:]+):/;
 const LABEL_RE = /^\s*([0-9A-Fa-f]+)\s+<([^>]+)>:/;
 const INSTRUCTION_RE = /^\s*([0-9A-Fa-f]+):\s+([0-9A-Fa-f]{4,16})\s+([A-Za-z.][\w.]*)(.*)$/;
+const DISASSEMBLED_LINE_RE = /^(\s*)([0-9A-Fa-f]+):\s*([0-9A-Fa-f]{4,16})(?:\s+(.*?))?\s*$/;
+
+const DEFAULT_FORMAT_OPTIONS = Object.freeze({
+  enabled: true,
+  alignAddresses: true,
+  addressWidth: "auto",
+  alignMachineCode: true,
+  machineCodeColumn: 8,
+  alignMnemonics: true,
+  mnemonicColumn: 27,
+  alignOperands: true,
+  operandsColumn: 36,
+  alignComments: true,
+  commentColumn: 60,
+  spaceAfterComma: false,
+  alignOperandFields: false,
+  operandFieldWidth: 6,
+  operandFieldWidths: []
+});
 
 const REGISTER_NAMES = [
   "zero", "ra", "sp", "gp", "tp", "fp", "pc",
@@ -49,6 +68,8 @@ function activate(context) {
     vscode.languages.registerDocumentSymbolProvider(selector, new RiscvDumpSymbolProvider()),
     vscode.languages.registerDefinitionProvider(selector, new RiscvDumpDefinitionProvider()),
     vscode.languages.registerHoverProvider(selector, new RiscvDumpHoverProvider()),
+    vscode.languages.registerDocumentFormattingEditProvider(selector, new RiscvDumpFormattingProvider()),
+    vscode.languages.registerDocumentRangeFormattingEditProvider(selector, new RiscvDumpFormattingProvider()),
     vscode.languages.registerCompletionItemProvider(
       selector,
       new RiscvDumpCompletionProvider(),
@@ -145,6 +166,17 @@ class RiscvDumpCompletionProvider {
       ...REGISTER_NAMES.map((name) => completion(name, vscode.CompletionItemKind.Variable, "RISC-V register")),
       ...CSR_NAMES.map((name) => completion(name, vscode.CompletionItemKind.Constant, "RISC-V CSR"))
     ];
+  }
+}
+
+class RiscvDumpFormattingProvider {
+  provideDocumentFormattingEdits(document) {
+    return createFormattingEdits(document, fullDocumentRange(document));
+  }
+
+  provideDocumentRangeFormattingEdits(document, range) {
+    const lineRange = wholeLineRange(document, range);
+    return createFormattingEdits(document, lineRange);
   }
 }
 
@@ -299,7 +331,335 @@ function parseInstructionLine(text) {
   };
 }
 
+function createFormattingEdits(document, range) {
+  const options = getFormatterOptions(document);
+  if (!options.enabled) {
+    return [];
+  }
+
+  const original = document.getText(range);
+  const formatted = formatText(original, options, getDocumentEol(document));
+  if (original === formatted) {
+    return [];
+  }
+
+  return [vscode.TextEdit.replace(range, formatted)];
+}
+
+function getFormatterOptions(document) {
+  const config = vscode.workspace.getConfiguration("riscvDumpAsm", document.uri);
+  return {
+    enabled: config.get("format.enabled", DEFAULT_FORMAT_OPTIONS.enabled),
+    alignAddresses: config.get("format.alignAddresses", DEFAULT_FORMAT_OPTIONS.alignAddresses),
+    addressWidth: getNumberOrKeyword(
+      config.get("format.addressWidth", DEFAULT_FORMAT_OPTIONS.addressWidth),
+      "auto",
+      1,
+      32
+    ),
+    alignMachineCode: config.get("format.alignMachineCode", DEFAULT_FORMAT_OPTIONS.alignMachineCode),
+    machineCodeColumn: clampNumber(config.get("format.machineCodeColumn", DEFAULT_FORMAT_OPTIONS.machineCodeColumn), 0, 120),
+    alignMnemonics: config.get("format.alignMnemonics", DEFAULT_FORMAT_OPTIONS.alignMnemonics),
+    mnemonicColumn: clampNumber(config.get("format.mnemonicColumn", DEFAULT_FORMAT_OPTIONS.mnemonicColumn), 0, 160),
+    alignOperands: config.get("format.alignOperands", DEFAULT_FORMAT_OPTIONS.alignOperands),
+    operandsColumn: clampNumber(config.get("format.operandsColumn", DEFAULT_FORMAT_OPTIONS.operandsColumn), 0, 180),
+    alignComments: config.get("format.alignComments", DEFAULT_FORMAT_OPTIONS.alignComments),
+    commentColumn: getNumberOrKeyword(
+      config.get("format.commentColumn", DEFAULT_FORMAT_OPTIONS.commentColumn),
+      "preserve",
+      0,
+      240
+    ),
+    spaceAfterComma: config.get("format.spaceAfterComma", DEFAULT_FORMAT_OPTIONS.spaceAfterComma),
+    alignOperandFields: config.get("format.alignOperandFields", DEFAULT_FORMAT_OPTIONS.alignOperandFields),
+    operandFieldWidth: clampNumber(config.get("format.operandFieldWidth", DEFAULT_FORMAT_OPTIONS.operandFieldWidth), 1, 40),
+    operandFieldWidths: clampNumberArray(
+      config.get("format.operandFieldWidths", DEFAULT_FORMAT_OPTIONS.operandFieldWidths),
+      1,
+      80
+    )
+  };
+}
+
+function clampNumber(value, min, max) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return min;
+  }
+  return Math.max(min, Math.min(max, Math.trunc(numeric)));
+}
+
+function getNumberOrKeyword(value, keyword, min, max) {
+  if (value === keyword) {
+    return keyword;
+  }
+  return clampNumber(value, min, max);
+}
+
+function clampNumberArray(value, min, max) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => Number(item))
+    .filter((item) => Number.isFinite(item))
+    .map((item) => Math.max(min, Math.min(max, Math.trunc(item))));
+}
+
+function fullDocumentRange(document) {
+  const lastLine = document.lineCount - 1;
+  return new vscode.Range(0, 0, lastLine, document.lineAt(lastLine).text.length);
+}
+
+function wholeLineRange(document, range) {
+  const startLine = clampLine(document, range.start.line);
+  const endLine = clampLine(document, range.end.line);
+  return new vscode.Range(
+    startLine,
+    0,
+    endLine,
+    document.lineAt(endLine).text.length
+  );
+}
+
+function getDocumentEol(document) {
+  if (document.eol === vscode.EndOfLine.CRLF) {
+    return "\r\n";
+  }
+  return "\n";
+}
+
+function formatText(text, options = DEFAULT_FORMAT_OPTIONS, preferredEol) {
+  const eol = detectEol(text, preferredEol);
+  const lines = text.split(/\r\n|\n/);
+  const resolvedOptions = resolveAutoFormatOptions(lines, options);
+  return lines.map((line) => formatDisassembledLine(line, resolvedOptions)).join(eol);
+}
+
+function detectEol(text, preferredEol = "\n") {
+  const crlf = (text.match(/\r\n/g) || []).length;
+  const lf = (text.match(/(?<!\r)\n/g) || []).length;
+  if (crlf === 0 && lf === 0) {
+    return preferredEol;
+  }
+  return crlf >= lf ? "\r\n" : "\n";
+}
+
+function formatDisassembledLine(line, options = DEFAULT_FORMAT_OPTIONS) {
+  const parsed = parseDisassembledLine(line);
+  if (!parsed) {
+    return line;
+  }
+
+  let output = options.alignAddresses
+    ? `${parsed.address.padStart(Math.max(resolveAddressWidth(options), parsed.address.length))}:`
+    : `${parsed.leading}${parsed.address}:`;
+
+  output = appendColumn(output, parsed.machineCode, options.machineCodeColumn, options.alignMachineCode);
+
+  if (parsed.mnemonic) {
+    output = appendColumn(output, parsed.mnemonic, options.mnemonicColumn, options.alignMnemonics);
+  }
+
+  if (parsed.operands) {
+    output = appendColumn(
+      output,
+      formatOperands(parsed.operands, options),
+      options.operandsColumn,
+      options.alignOperands
+    );
+  }
+
+  if (parsed.comment) {
+    output = appendComment(output, parsed.comment, options);
+  }
+
+  return output.trimEnd();
+}
+
+function resolveAutoFormatOptions(lines, options) {
+  if (options.addressWidth !== "auto") {
+    return options;
+  }
+
+  let addressWidth = 4;
+  for (const line of lines) {
+    const parsed = parseDisassembledLine(line);
+    if (parsed) {
+      addressWidth = Math.max(addressWidth, parsed.address.length);
+    }
+  }
+
+  return {
+    ...options,
+    addressWidth
+  };
+}
+
+function resolveAddressWidth(options) {
+  return options.addressWidth === "auto" ? 4 : options.addressWidth;
+}
+
+function parseDisassembledLine(line) {
+  const match = line.match(DISASSEMBLED_LINE_RE);
+  if (!match) {
+    return undefined;
+  }
+
+  const [, leading, address, machineCode, body = ""] = match;
+  const split = splitComment(body);
+  const code = split.code.trim();
+
+  if (!code) {
+    return {
+      leading,
+      address,
+      machineCode,
+      mnemonic: "",
+      operands: "",
+      comment: split.comment
+    };
+  }
+
+  const codeMatch = code.match(/^([A-Za-z.][\w.]*)(?:\s+(.*))?$/);
+  if (!codeMatch) {
+    return undefined;
+  }
+
+  return {
+    leading,
+    address,
+    machineCode,
+    mnemonic: codeMatch[1],
+    operands: (codeMatch[2] || "").trim(),
+    comment: split.comment
+  };
+}
+
+function splitComment(text) {
+  const index = text.indexOf("#");
+  if (index === -1) {
+    return { code: text, comment: "" };
+  }
+
+  const code = text.slice(0, index);
+  return {
+    code,
+    comment: text.slice(index).trimEnd()
+  };
+}
+
+function appendColumn(current, value, column, enabled) {
+  if (!value) {
+    return current;
+  }
+
+  if (!enabled) {
+    return `${current} ${value}`;
+  }
+
+  const spaces = Math.max(1, column - current.length);
+  return `${current}${" ".repeat(spaces)}${value}`;
+}
+
+function appendComment(current, comment, options) {
+  if (options.commentColumn === "preserve") {
+    return `${current} ${comment}`;
+  }
+
+  return appendColumn(current, comment, options.commentColumn, options.alignComments);
+}
+
+function formatOperands(operands, options) {
+  const parts = splitOperands(operands);
+  if (parts.length <= 1) {
+    return operands.trim();
+  }
+
+  if (options.alignOperandFields) {
+    return alignOperandFields(parts, getOperandFieldWidths(options));
+  }
+
+  return parts.join(options.spaceAfterComma ? ", " : ",");
+}
+
+function getOperandFieldWidths(options) {
+  if (Array.isArray(options.operandFieldWidths) && options.operandFieldWidths.length > 0) {
+    return options.operandFieldWidths;
+  }
+
+  return [options.operandFieldWidth];
+}
+
+function splitOperands(operands) {
+  const parts = [];
+  let current = "";
+  let parenDepth = 0;
+  let angleDepth = 0;
+
+  for (const char of operands) {
+    if (char === "(") {
+      parenDepth += 1;
+    } else if (char === ")" && parenDepth > 0) {
+      parenDepth -= 1;
+    } else if (char === "<") {
+      angleDepth += 1;
+    } else if (char === ">" && angleDepth > 0) {
+      angleDepth -= 1;
+    }
+
+    if (char === "," && parenDepth === 0 && angleDepth === 0) {
+      parts.push(current.trim());
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  parts.push(current.trim());
+  return parts.filter((part) => part.length > 0);
+}
+
+function alignOperandFields(parts, fieldWidths) {
+  let output = parts[0];
+  let column = output.length;
+  let target = 0;
+
+  for (let index = 1; index < parts.length; index++) {
+    output += ",";
+    column += 1;
+
+    target += getOperandFieldWidth(fieldWidths, index - 1);
+    const spaces = Math.max(1, target - column);
+    output += `${" ".repeat(spaces)}${parts[index]}`;
+    column += spaces + parts[index].length;
+  }
+
+  return output;
+}
+
+function getOperandFieldWidth(fieldWidths, index) {
+  if (typeof fieldWidths === "number") {
+    return fieldWidths;
+  }
+
+  if (!Array.isArray(fieldWidths) || fieldWidths.length === 0) {
+    return DEFAULT_FORMAT_OPTIONS.operandFieldWidth;
+  }
+
+  return fieldWidths[Math.min(index, fieldWidths.length - 1)];
+}
+
 module.exports = {
   activate,
-  deactivate
+  deactivate,
+  __test: {
+    DEFAULT_FORMAT_OPTIONS,
+    formatText,
+    formatDisassembledLine,
+    parseDisassembledLine,
+    splitOperands
+  }
 };

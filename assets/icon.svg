@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="RISC-V Dump Assembly icon">
+  <defs>
+    <linearGradient id="bg" x1="20" y1="14" x2="108" y2="116" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1f2937"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="url(#bg)"/>
+  <path d="M27 39h74" fill="none" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+  <path d="M27 89h74" fill="none" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+  <text x="25" y="62" fill="#e5e7eb" font-family="Segoe UI, Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="0">RV</text>
+  <path d="M28 77h22M61 77h18M91 77h8" fill="none" stroke="#38bdf8" stroke-width="6" stroke-linecap="round"/>
+  <path d="M28 96h30M69 96h19" fill="none" stroke="#94a3b8" stroke-width="5" stroke-linecap="round"/>
+  <path d="M90 92l12 8-12 8" fill="none" stroke="#a3e635" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="98" cy="45" r="10" fill="#38bdf8"/>
+  <path d="M94 45h8M98 41v8" fill="none" stroke="#0f172a" stroke-width="3" stroke-linecap="round"/>
+</svg>

@@ -192,6 +192,7 @@
       "patterns": [
         {
           "name": "comment.line.number-sign.riscv",
+          "contentName": "markup.italic.riscv-dump",
           "begin": "#",
           "beginCaptures": {
             "0": {
@@ -210,6 +211,7 @@
         },
         {
           "name": "comment.line.semicolon.riscv",
+          "contentName": "markup.italic.riscv-dump",
           "begin": ";",
           "beginCaptures": {
             "0": {

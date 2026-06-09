@@ -2,8 +2,17 @@
   "name": "riscv-dump-asm",
   "displayName": "RISC-V Dump Assembly",
   "description": "Syntax highlighting and navigation support for RISC-V objdump-style disassembly files.",
-  "version": "0.0.1",
-  "publisher": "local",
+  "version": "0.0.7",
+  "publisher": "Esing",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Zxis233/riscvdump-support.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Zxis233/riscvdump-support/issues"
+  },
+  "homepage": "https://github.com/Zxis233/riscvdump-support#readme",
+  "icon": "assets/icon.png",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -14,6 +23,9 @@
     "onLanguage:riscv-dump-asm"
   ],
   "main": "./src/extension.js",
+  "scripts": {
+    "test": "node --check ./src/extension.js && node ./test/formatter.test.js"
+  },
   "contributes": {
     "languages": [
       {
@@ -49,6 +61,136 @@
         "scopeName": "source.riscv-dump-asm",
         "path": "./syntaxes/riscv-dump-asm.tmLanguage.json"
       }
-    ]
+    ],
+    "configurationDefaults": {
+      "editor.tokenColorCustomizations": {
+        "textMateRules": [
+          {
+            "scope": "markup.italic.riscv-dump",
+            "settings": {
+              "fontStyle": "italic"
+            }
+          }
+        ]
+      }
+    },
+    "configuration": {
+      "title": "RISC-V Dump Assembly",
+      "properties": {
+        "riscvDumpAsm.format.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable document and range formatting for RISC-V disassembly files."
+        },
+        "riscvDumpAsm.format.alignAddresses": {
+          "type": "boolean",
+          "default": true,
+          "description": "Right-align instruction addresses before the colon."
+        },
+        "riscvDumpAsm.format.addressWidth": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 32
+            },
+            {
+              "type": "string",
+              "enum": [
+                "auto"
+              ]
+            }
+          ],
+          "default": "auto",
+          "description": "Minimum width used when aligning instruction addresses."
+        },
+        "riscvDumpAsm.format.alignMachineCode": {
+          "type": "boolean",
+          "default": true,
+          "description": "Align machine code at a fixed column."
+        },
+        "riscvDumpAsm.format.machineCodeColumn": {
+          "type": "number",
+          "default": 8,
+          "minimum": 0,
+          "maximum": 120,
+          "description": "Zero-based column for machine code when machine-code alignment is enabled."
+        },
+        "riscvDumpAsm.format.alignMnemonics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Align instruction mnemonics at a fixed column."
+        },
+        "riscvDumpAsm.format.mnemonicColumn": {
+          "type": "number",
+          "default": 27,
+          "minimum": 0,
+          "maximum": 160,
+          "description": "Zero-based column for instruction mnemonics when mnemonic alignment is enabled."
+        },
+        "riscvDumpAsm.format.alignOperands": {
+          "type": "boolean",
+          "default": true,
+          "description": "Align operands at a fixed column."
+        },
+        "riscvDumpAsm.format.operandsColumn": {
+          "type": "number",
+          "default": 36,
+          "minimum": 0,
+          "maximum": 180,
+          "description": "Zero-based column for operands when operand alignment is enabled."
+        },
+        "riscvDumpAsm.format.alignComments": {
+          "type": "boolean",
+          "default": true,
+          "description": "Align comments at a fixed column."
+        },
+        "riscvDumpAsm.format.commentColumn": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 240
+            },
+            {
+              "type": "string",
+              "enum": [
+                "preserve"
+              ]
+            }
+          ],
+          "default": 60,
+          "description": "Zero-based column for comments when comment alignment is enabled."
+        },
+        "riscvDumpAsm.format.spaceAfterComma": {
+          "type": "boolean",
+          "default": false,
+          "description": "Insert one space after operand commas when operand-field alignment is disabled."
+        },
+        "riscvDumpAsm.format.alignOperandFields": {
+          "type": "boolean",
+          "default": false,
+          "description": "Align comma-separated operand fields, useful for lining up register operands."
+        },
+        "riscvDumpAsm.format.operandFieldWidth": {
+          "type": "number",
+          "default": 6,
+          "minimum": 1,
+          "maximum": 40,
+          "description": "Column stride for operand fields when operand-field alignment is enabled."
+        },
+        "riscvDumpAsm.format.operandFieldWidths": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 80
+          },
+          "maxItems": 8,
+          "description": "Per-operand field widths used when operand-field alignment is enabled. For example, [6, 10, 8] places the second operand at column 6 and the third operand at column 16 within the operand field. Leave empty to use operandFieldWidth for every field."
+        }
+      }
+    }
   }
 }
