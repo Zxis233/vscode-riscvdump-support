@@ -2,7 +2,7 @@
   "name": "riscv-dump-asm",
   "displayName": "RISC-V Dump Assembly",
   "description": "Syntax highlighting and navigation support for RISC-V objdump-style disassembly files.",
-  "version": "0.0.7",
+  "version": "0.1.0",
   "publisher": "Esing",
   "repository": {
     "type": "git",
@@ -18,6 +18,17 @@
   },
   "categories": [
     "Programming Languages"
+  ],
+  "keywords": [
+    "riscv",
+    "disassembly",
+    "objdump",
+    "dump",
+    "assembly",
+    "asm",
+    "asm dump",
+    "syntax highlighting",
+    "language support"
   ],
   "activationEvents": [
     "onLanguage:riscv-dump-asm"
